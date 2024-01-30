@@ -9,14 +9,19 @@ import (
 	"github.com/ethanthatonekid/discord_conversation_summary_bot/pkg/store"
 )
 
-type SetupBotOptions struct {
-	Session *session.Session
-	Store   *store.Store
-	// TODO: Pass conversation summary ingestion handler function, etc.
+// ConversationSummaryUpdateEventHandler is a function that handles a ConversationSummaryUpdateEvent.
+// Returns bool pointer that indicates whether or not the event should be recorded as successfully delivered.
+type ConversationSummaryUpdateEventHandler func(gateway.ConversationSummaryUpdateEvent)
+
+// Options is a set of options for a conversation summary bot.
+type Options struct {
+	Session                          *session.Session
+	Store                            *store.Store
+	OnConversationSummaryUpdateEvent ConversationSummaryUpdateEventHandler
 }
 
-// SetupBot sets up a new bot.
-func SetupBot(o SetupBotOptions) {
+// Setup sets up a new bot.
+func Setup(o Options) {
 	o.Session.AddHandler(func(c *gateway.MessageCreateEvent) {
 		log.Println(c.Author.Username, "sent", c.Content)
 	})

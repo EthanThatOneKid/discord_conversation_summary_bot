@@ -10,6 +10,15 @@ implementations.
 Copy `.env.example` to `.env` and populate it with your bot's token and the
 webhook URL to send messages to.
 
+Run `go mod tidy` to install all required dependencies.
+
+Invite the bot to your server with the following URL, replacing
+`$CLIENT_ID` with your bot's client ID:
+
+```
+https://discord.com/oauth2/authorize?client_id=$CLIENT_ID&scope=bot
+```
+
 Start the bot with the following command:
 
 ```sh

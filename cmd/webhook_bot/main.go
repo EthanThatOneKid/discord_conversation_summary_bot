@@ -46,9 +46,21 @@ func main() {
 	s.AddIntents(gateway.IntentGuildMessages)
 	// s.AddIntents(gateway.IntentDirectMessages)
 
-	bot.SetupBot(bot.SetupBotOptions{
+	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
+	if webhookURL == "" {
+		log.Fatalln("No $DISCORD_WEBHOOK_URL given.")
+	}
+
+	bot.Setup(bot.Options{
 		Session: s,
 		Store:   st,
+		OnConversationSummaryUpdateEvent: func(event gateway.ConversationSummaryUpdateEvent) {
+			_, err := executeWebhooksWithEvent(webhookURL, event)
+			if err != nil {
+				log.Println("Failed to execute webhook:", err)
+				return
+			}
+		},
 	})
 	if err := s.Open(context.Background()); err != nil {
 		log.Fatalln("Failed to connect:", err)
