@@ -140,8 +140,7 @@ func main() {
 	s := session.New("Bot " + token)
 
 	// Add the needed Gateway intents.
-	// s.AddIntents(gateway.IntentGuildMessages)
-	// s.AddIntents(gateway.IntentDirectMessages)
+	s.AddIntents(gateway.IntentGuildMessages)
 
 	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
 	if webhookURL == "" {
