@@ -5,26 +5,30 @@ import (
 
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
-
-	"github.com/ethanthatonekid/discord_conversation_summary_bot/pkg/store"
 )
 
 // ConversationSummaryUpdateEventHandler is a function that handles a ConversationSummaryUpdateEvent.
 // Returns bool pointer that indicates whether or not the event should be recorded as successfully delivered.
-type ConversationSummaryUpdateEventHandler func(gateway.ConversationSummaryUpdateEvent)
+type ConversationSummaryUpdateEventHandler func(*gateway.ConversationSummaryUpdateEvent)
 
 // Options is a set of options for a conversation summary bot.
 type Options struct {
 	Session                          *session.Session
-	Store                            *store.Store
 	OnConversationSummaryUpdateEvent ConversationSummaryUpdateEventHandler
 }
 
 // Setup sets up a new bot.
 func Setup(o Options) {
 	o.Session.AddHandler(func(c *gateway.MessageCreateEvent) {
-		log.Println(c.Author.Username, "sent", c.Content)
+		log.Println(c.Author.Username, "sent", c.Message.Content)
 	})
 
-	// TODO: Send conversation summaries if storage confirms that the message was already sent.
+	o.Session.AddHandler(func(c *gateway.ConversationSummaryUpdateEvent) {
+		for _, summary := range c.Summaries {
+			log.Printf("Conversation summary update event: %s", summary.ID)
+			log.Printf("Summary: %s", summary.ShortSummary)
+		}
+
+		o.OnConversationSummaryUpdateEvent(c)
+	})
 }

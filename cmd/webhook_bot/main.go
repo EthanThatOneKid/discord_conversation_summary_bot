@@ -13,11 +13,8 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
 	"github.com/joho/godotenv"
-	"libdb.so/persist"
-	"libdb.so/persist/driver/badgerdb"
 
 	"github.com/ethanthatonekid/discord_conversation_summary_bot/pkg/bot"
-	"github.com/ethanthatonekid/discord_conversation_summary_bot/pkg/store"
 )
 
 func formatMention(id discord.UserID) string {
@@ -90,7 +87,7 @@ func paginate[T any](s []T, pageSize int) (pages [][]T) {
 	return
 }
 
-func executeWebhooksWithEvent(webhookURL string, event gateway.ConversationSummaryUpdateEvent) ([]*discord.Message, error) {
+func executeWebhooksWithEvent(webhookURL string, event *gateway.ConversationSummaryUpdateEvent) ([]*discord.Message, error) {
 	webhookID, _, err := webhook.ParseURL(webhookURL)
 	if err != nil {
 		return nil, err
@@ -116,7 +113,7 @@ func executeWebhooksWithEvent(webhookURL string, event gateway.ConversationSumma
 	return messages, nil
 }
 
-func handleConversationSummaryUpdateEvent(webhookURL string, event gateway.ConversationSummaryUpdateEvent) {
+func handleConversationSummaryUpdateEvent(webhookURL string, event *gateway.ConversationSummaryUpdateEvent) {
 	messages, err := executeWebhooksWithEvent(webhookURL, event)
 	if err != nil {
 		log.Println("Failed to execute webhook:", err)
@@ -135,19 +132,6 @@ func main() {
 		log.Fatalln("Error loading .env file:", err)
 	}
 
-	storePath := os.Getenv("DB_PATH")
-	if storePath == "" {
-		log.Fatalln("No $DB_PATH given. Use :memory: for in-memory storage.")
-	}
-
-	m, err := persist.NewMustMap[string, store.Summary](badgerdb.Open, storePath)
-	if err != nil {
-		log.Fatalln("cannot create badgerdb-backed map:", err)
-	}
-	defer m.Close()
-
-	st := store.NewStore(&m)
-
 	token := os.Getenv("DISCORD_BOT_TOKEN")
 	if token == "" {
 		log.Fatalln("No $DISCORD_BOT_TOKEN given.")
@@ -156,7 +140,7 @@ func main() {
 	s := session.New("Bot " + token)
 
 	// Add the needed Gateway intents.
-	s.AddIntents(gateway.IntentGuildMessages)
+	// s.AddIntents(gateway.IntentGuildMessages)
 	// s.AddIntents(gateway.IntentDirectMessages)
 
 	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
@@ -166,8 +150,7 @@ func main() {
 
 	bot.Setup(bot.Options{
 		Session: s,
-		Store:   st,
-		OnConversationSummaryUpdateEvent: func(event gateway.ConversationSummaryUpdateEvent) {
+		OnConversationSummaryUpdateEvent: func(event *gateway.ConversationSummaryUpdateEvent) {
 			handleConversationSummaryUpdateEvent(webhookURL, event)
 		},
 	})
