@@ -25,7 +25,7 @@ func formatMentions(userIDs []discord.UserID) string {
 		mentions = append(mentions, formatMention(id))
 	}
 
-	return strings.Join(mentions, "")
+	return strings.Join(mentions, " ")
 }
 
 func formatMessageURL(guildID discord.GuildID, channelID discord.ChannelID, messageID discord.MessageID) string {
@@ -64,6 +64,7 @@ func makeExecuteDataWithSummaries(guildID discord.GuildID, channelID discord.Cha
 	for _, summary := range summaries {
 		embeds = append(embeds, discord.Embed{
 			Title:       summary.Topic,
+			URL:         formatMessageURL(guildID, channelID, summary.StartID),
 			Description: summary.ShortSummary,
 			Fields: []discord.EmbedField{
 				{Name: formatPeopleEmbedFieldName(len(summary.People)),
