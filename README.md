@@ -39,7 +39,7 @@ https://discord.com/oauth2/authorize?client_id=$CLIENT_ID&scope=bot&permissions=
 Start the bot with the following command:
 
 ```sh
-go run cmd/webhook_bot/main.go
+go run .
 ```
 
 ---
