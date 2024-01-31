@@ -42,8 +42,6 @@ Start the bot with the following command:
 go run cmd/webhook_bot/main.go
 ```
 
-<!-- TODO: Document `ngrok` usage for local development. -->
-
 ---
 
 Developed with 💖 by [**@EthanThatOneKid**](https://etok.codes/)
