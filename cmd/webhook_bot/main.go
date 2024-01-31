@@ -13,8 +13,6 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
 	"github.com/joho/godotenv"
-
-	"github.com/ethanthatonekid/discord_conversation_summary_bot/pkg/bot"
 )
 
 func formatMention(id discord.UserID) string {
@@ -27,7 +25,7 @@ func formatMentions(userIDs []discord.UserID) string {
 		mentions = append(mentions, formatMention(id))
 	}
 
-	return strings.Join(mentions, ", ")
+	return strings.Join(mentions, "")
 }
 
 func formatMessageURL(guildID discord.GuildID, channelID discord.ChannelID, messageID discord.MessageID) string {
@@ -39,12 +37,7 @@ func formatSummaryRange(guildID discord.GuildID, channelID discord.ChannelID, su
 	m2 := formatMessageURL(guildID, channelID, summary.EndID)
 	amountBetween := summary.Count - 2
 	if amountBetween > 0 {
-		mid := fmt.Sprintf("%d message", amountBetween)
-		if amountBetween > 1 {
-			mid += "s"
-		}
-		mid = fmt.Sprintf("…%s…", mid)
-		return fmt.Sprintf("%s → %s → %s", m1, mid, m2)
+		return fmt.Sprintf("%s +%d → %s", m1, amountBetween, m2)
 	}
 
 	return fmt.Sprintf("%s → %s", m1, m2)
@@ -134,19 +127,6 @@ func executeWebhooksWithEvent(webhookURL string, event *gateway.ConversationSumm
 	return messages, nil
 }
 
-func handleConversationSummaryUpdateEvent(webhookURL string, event *gateway.ConversationSummaryUpdateEvent) {
-	messages, err := executeWebhooksWithEvent(webhookURL, event)
-	if err != nil {
-		log.Println("Failed to execute webhook:", err)
-		return
-	}
-
-	log.Println("Executed webhook(s):")
-	for _, m := range messages {
-		log.Println(m.ID)
-	}
-}
-
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -168,14 +148,18 @@ func main() {
 		log.Fatalln("No $DISCORD_WEBHOOK_URL given.")
 	}
 
-	bot.Setup(bot.Options{
-		Session: s,
-		OnConversationSummaryUpdateEvent: func(event *gateway.ConversationSummaryUpdateEvent) {
-			for _, summary := range event.Summaries {
-				log.Printf("Conversation summary update event: %s", summary.ShortSummary)
-			}
-			handleConversationSummaryUpdateEvent(webhookURL, event)
-		},
+	// Add the conversation summary update event handler.
+	s.AddHandler(func(event *gateway.ConversationSummaryUpdateEvent) {
+		messages, err := executeWebhooksWithEvent(webhookURL, event)
+		if err != nil {
+			log.Println("Failed to execute webhook:", err)
+			return
+		}
+
+		log.Println("Executed webhook(s):")
+		for _, m := range messages {
+			log.Println(m.ID)
+		}
 	})
 	if err := s.Open(context.Background()); err != nil {
 		log.Fatalln("Failed to connect:", err)
