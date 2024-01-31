@@ -34,31 +34,52 @@ func formatMessageURL(guildID discord.GuildID, channelID discord.ChannelID, mess
 	return fmt.Sprintf("https://discord.com/channels/%d/%d/%d", guildID, channelID, messageID)
 }
 
-func formatChannel(channelID discord.ChannelID) string {
-	return fmt.Sprintf("<#%s>", channelID.String())
-}
-
 func formatSummaryRange(guildID discord.GuildID, channelID discord.ChannelID, summary gateway.ConversationSummary) string {
 	m1 := formatMessageURL(guildID, channelID, summary.StartID)
 	m2 := formatMessageURL(guildID, channelID, summary.EndID)
 	amountBetween := summary.Count - 2
 	if amountBetween > 0 {
-		return fmt.Sprintf("%s\n[%d messages]\n%s", m1, amountBetween, m2)
+		mid := fmt.Sprintf("%d message", amountBetween)
+		if amountBetween > 1 {
+			mid += "s"
+		}
+		mid = fmt.Sprintf("…%s…", mid)
+		return fmt.Sprintf("%s → %s → %s", m1, mid, m2)
 	}
 
-	return fmt.Sprintf("%s\n%s", m1, m2)
+	return fmt.Sprintf("%s → %s", m1, m2)
+}
+
+func formatPeopleEmbedFieldName(amountPeople int) string {
+	if amountPeople == 1 {
+		return "Person"
+	}
+
+	return fmt.Sprintf("%d people", amountPeople)
+}
+
+func formatMessagesEmbedFieldName(amountMessages int) string {
+	if amountMessages == 1 {
+		return "Message"
+	}
+
+	return fmt.Sprintf("%d messages", amountMessages)
 }
 
 func makeExecuteDataWithSummaries(guildID discord.GuildID, channelID discord.ChannelID, summaries []gateway.ConversationSummary) webhook.ExecuteData {
 	embeds := []discord.Embed{}
 	for _, summary := range summaries {
 		embeds = append(embeds, discord.Embed{
-			Title: summary.ShortSummary,
+			Title:       summary.Topic,
+			Description: summary.ShortSummary,
 			Fields: []discord.EmbedField{
-				{Name: "Topic", Value: summary.Topic, Inline: true},
-				{Name: "Channel", Value: formatChannel(channelID), Inline: true},
-				{Name: "Messages", Value: formatSummaryRange(guildID, channelID, summary), Inline: true},
-				{Name: "People", Value: formatMentions(summary.People), Inline: true},
+				{Name: formatPeopleEmbedFieldName(len(summary.People)),
+					Value: formatMentions(summary.People)},
+				{Name: formatMessagesEmbedFieldName(summary.Count),
+					Value: formatSummaryRange(guildID, channelID, summary)},
+			},
+			Footer: &discord.EmbedFooter{
+				Text: fmt.Sprintf("Summary ID: %d", summary.ID),
 			},
 		})
 	}
@@ -132,12 +153,12 @@ func main() {
 		log.Fatalln("Error loading .env file:", err)
 	}
 
-	token := os.Getenv("DISCORD_BOT_TOKEN")
+	token := os.Getenv("DISCORD_USER_TOKEN")
 	if token == "" {
-		log.Fatalln("No $DISCORD_BOT_TOKEN given.")
+		log.Fatalln("No $DISCORD_USER_TOKEN given.")
 	}
 
-	s := session.New("Bot " + token)
+	s := session.New(token)
 
 	// Add the needed Gateway intents.
 	s.AddIntents(gateway.IntentGuildMessages)
