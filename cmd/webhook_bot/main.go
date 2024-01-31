@@ -150,6 +150,9 @@ func main() {
 	bot.Setup(bot.Options{
 		Session: s,
 		OnConversationSummaryUpdateEvent: func(event *gateway.ConversationSummaryUpdateEvent) {
+			for _, summary := range event.Summaries {
+				log.Printf("Conversation summary update event: %s", summary.ShortSummary)
+			}
 			handleConversationSummaryUpdateEvent(webhookURL, event)
 		},
 	})
