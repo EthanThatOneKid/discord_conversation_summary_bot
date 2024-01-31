@@ -2,8 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ethanthatonekid/discord_conversation_summary_bot.svg)](https://pkg.go.dev/github.com/ethanthatonekid/discord_conversation_summary_bot)
 
-Discord conversation summary update event handler in Go with example bot
-implementations.
+Discord conversation summary update event handler in Go. 
 
 ## Development
 
@@ -30,7 +29,7 @@ Copy `.env.example` to `.env` and populate it with your secrets.
 Run `go mod tidy` to install all required dependencies.
 
 Invite the bot to your server with the following URL, replacing
-`$CLIENT_ID` with your bot's client ID ([permissions](https://discordapi.com/permissions.html#65536)):
+`$CLIENT_ID` with your bot's client ID (with [permissions](https://discordapi.com/permissions.html#65536)):
 
 ```
 https://discord.com/oauth2/authorize?client_id=$CLIENT_ID&scope=bot&permissions=65536
