@@ -2,11 +2,22 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ethanthatonekid/discord_conversation_summary_bot.svg)](https://pkg.go.dev/github.com/ethanthatonekid/discord_conversation_summary_bot)
 
-Discord conversation summary update event handler in Go. 
+Discord conversation summary update event handler in Go.
 
 ## Development
 
-Copy `.env.example` to `.env` and populate it with your secrets.
+Populate a `config.json` file with your secrets.
+
+```json
+{
+  "token": "$DISCORD_USER_TOKEN",
+  "webhooks": [
+    {
+      "url": "$DISCORD_WEBHOOK_URL"
+    }
+  ]
+}
+```
 
 > [!NOTE]
 > To get your user token, follow these steps (adapted from [diamondburned/gtkcord4's README.md](https://github.com/diamondburned/gtkcord4/blob/main/README.md)):
