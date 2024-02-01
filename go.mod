@@ -4,10 +4,7 @@ go 1.21.4
 
 toolchain go1.21.6
 
-require (
-	github.com/diamondburned/arikawa/v3 v3.3.5-0.20240122104110-dbc4ae8978dd
-	github.com/joho/godotenv v1.5.1
-)
+require github.com/diamondburned/arikawa/v3 v3.3.5-0.20240122104110-dbc4ae8978dd
 
 require (
 	github.com/gorilla/schema v1.2.0 // indirect

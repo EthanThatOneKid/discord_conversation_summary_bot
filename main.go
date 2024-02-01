@@ -3,16 +3,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/diamondburned/arikawa/v3/api/webhook"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/session"
-	"github.com/joho/godotenv"
 )
 
 func formatMention(id discord.UserID) string {
@@ -128,39 +130,88 @@ func executeWebhooksWithEvent(webhookURL string, event *gateway.ConversationSumm
 	return messages, nil
 }
 
-func main() {
-	err := godotenv.Load(".env")
+// webhookConfig is the configuration for a webhook.
+type webhookConfig struct {
+	// URL is the webhook URL to send the conversation summaries to.
+	URL string `json:"url"`
+
+	// GuildIDs is the list of guild IDs allowed to send conversation summaries to the webhook.
+	// If empty, all guilds are allowed.
+	GuildIDs []discord.GuildID `json:"guild_ids"`
+
+	// ChannelIDs is the list of channel IDs allowed to send conversation summaries to the webhook.
+	// If empty, all channels are allowed.
+	ChannelIDs []discord.ChannelID `json:"channel_ids"`
+}
+
+// config is the configuration for the bot.
+type config struct {
+	Token    string          `json:"token"`
+	Webhooks []webhookConfig `json:"webhooks"`
+}
+
+func (c *config) unmarshal(data []byte) error {
+	return json.Unmarshal(data, c)
+}
+
+func mustConfig(path string) *config {
+	file, err := os.ReadFile(path)
 	if err != nil {
-		log.Fatalln("Error loading .env file:", err)
+		log.Fatalln("Failed to read config file:", err)
 	}
 
-	token := os.Getenv("DISCORD_USER_TOKEN")
-	if token == "" {
-		log.Fatalln("No $DISCORD_USER_TOKEN given.")
+	var c config
+	if err := c.unmarshal(file); err != nil {
+		log.Fatalln("Failed to unmarshal config:", err)
 	}
 
-	s := session.New(token)
+	return &c
+}
+
+func webhookURLsByEvent(c *config, event *gateway.ConversationSummaryUpdateEvent) []string {
+	urls := []string{}
+	for _, wc := range c.Webhooks {
+		if len(wc.GuildIDs) > 0 && !slices.Contains(wc.GuildIDs, event.GuildID) {
+			continue
+		}
+
+		if len(wc.ChannelIDs) > 0 && !slices.Contains(wc.ChannelIDs, event.ChannelID) {
+			continue
+		}
+
+		urls = append(urls, wc.URL)
+	}
+
+	return urls
+}
+
+func main() {
+	c := mustConfig("config.json")
+	s := session.New(c.Token)
 
 	// Add the needed Gateway intents.
 	s.AddIntents(gateway.IntentGuildMessages)
 
-	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
-	if webhookURL == "" {
-		log.Fatalln("No $DISCORD_WEBHOOK_URL given.")
-	}
-
 	// Add the conversation summary update event handler.
 	s.AddHandler(func(event *gateway.ConversationSummaryUpdateEvent) {
-		messages, err := executeWebhooksWithEvent(webhookURL, event)
-		if err != nil {
-			log.Println("Failed to execute webhook:", err)
-			return
-		}
+		webhookURLs := webhookURLsByEvent(c, event)
+		var wg sync.WaitGroup
+		for _, webhookURL := range webhookURLs {
+			wg.Add(1)
+			go func(webhookURL string) {
+				messages, err := executeWebhooksWithEvent(webhookURL, event)
+				if err != nil {
+					log.Println("Failed to execute webhook:", err)
+					return
+				}
 
-		log.Println("Executed webhook(s):")
-		for _, m := range messages {
-			log.Println(m.ID)
+				log.Println("Executed webhook(s):")
+				for _, m := range messages {
+					log.Println(m.ID)
+				}
+			}(webhookURL)
 		}
+		wg.Wait()
 	})
 	if err := s.Open(context.Background()); err != nil {
 		log.Fatalln("Failed to connect:", err)
